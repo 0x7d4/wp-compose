@@ -1,0 +1,35 @@
+version: '3'
+services:
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: password
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: password
+    volumes:
+      - ./database_data:/var/lib/mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - db
+    ports:
+      - "8181:80"
+    volumes:
+      - /sessions
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      UPLOAD_LIMIT: 512M
