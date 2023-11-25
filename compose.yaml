@@ -4,6 +4,7 @@ services:
     image: wordpress:latest
     ports:
       - "80:80"
+      - "443:443"
     restart: always
     environment:
       WORDPRESS_DB_HOST: db
@@ -28,6 +29,7 @@ services:
       - db
     ports:
       - "8181:80"
+      - "8181:443"
     restart: always
     volumes:
       - /sessions
