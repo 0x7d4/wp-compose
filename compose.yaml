@@ -1,38 +1,72 @@
 version: '3'
+
 services:
+  db:
+    image: mysql:5.7-alpine
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
+      MYSQL_USER: ${WORDPRESS_DB_USER}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${WORDPRESS_DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - wp-network
+
   wordpress:
-    image: wordpress:latest
-    ports:
-      - "80:80"
-    restart: always
+    image: wordpress:php8.2-fpm-alpine
+    container_name: wordpress
     environment:
       WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: password
-      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
     volumes:
-      - ./wp-content:/var/www/html/wp-content
-  db:
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: password
-    volumes:
-      - ./database_data:/var/lib/mysql
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    links:
+      - wordpress:/var/www/html
+    depends_on:
       - db
+    networks:
+      - wp-network
+      
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
     ports:
-      - "8181:80"
-    restart: always
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
     volumes:
-      - /sessions
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - wordpress:/var/www/html
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - wordpress
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_ARBITRARY: 1
-      UPLOAD_LIMIT: 512M
+      - DOMAIN=${WORDPRESS_DOMAIN}
+    networks:
+      - wp-network
+
+  certbot:
+    image: certbot/certbot:alpine
+    container_name: certbot
+    command: certonly --webroot --webroot-path=/var/www/html --email ${CERTBOT_EMAIL} --agree-tos -d ${WORDPRESS_DOMAIN} -d www.${WORDPRESS_DOMAIN}
+    volumes:
+      - wordpress:/var/www/html
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - nginx
+    networks:
+      - wp-network
+
+networks:
+  wp-network:
+
+volumes:
+  wordpress:
+  db_data:
+  certbot-etc:
+  certbot-var:
