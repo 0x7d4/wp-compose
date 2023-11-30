@@ -1,15 +1,19 @@
 #!/bin/bash
 
 # Function to replace domain names in nginx.conf based on environment variables
-replace_domains() {
-    sed -i "s/yourdomain.com/$WORDPRESS_DOMAIN/g" nginx.conf
-    sed -i "s/www.yourdomain.com/www.$WORDPRESS_DOMAIN/g" nginx.conf
+nginx_replace_domain() {
+    sed -i "s/www.yourdomain.com/www.$1/g" nginx.conf
+    sed -i "s/yourdomain.com/$1/g" nginx.conf
+    echo "Domain names in nginx.conf have been updated."
 }
 
 # Function to prompt for variable value and export them
 ask_value() {
     read -p "Enter $1: " value
     export "$1=$value"
+    if [ "$1" == "WORDPRESS_DOMAIN" ]; then
+        nginx_replace_domain "$value"
+    fi
 }
 
 # Function to set all variables
@@ -36,8 +40,5 @@ else
         echo "Using existing environment variables."
     fi
 fi
-
-# Replace domain names in nginx.conf
-replace_domains
 
 echo "Domain names in nginx.conf have been updated."
