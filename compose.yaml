@@ -28,7 +28,6 @@ services:
     links:
       - db
     ports:
-      - "8181:80"
       - "8181:443"
     restart: always
     volumes:
